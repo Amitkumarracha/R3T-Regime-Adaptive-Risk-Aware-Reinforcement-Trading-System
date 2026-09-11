@@ -1,0 +1,14 @@
+[Unit]
+Description=Project Laplace RL Trading System
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/laplace
+EnvironmentFile=/home/ubuntu/laplace/config/.env
+ExecStart=/home/ubuntu/laplace/.venv/bin/python app.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

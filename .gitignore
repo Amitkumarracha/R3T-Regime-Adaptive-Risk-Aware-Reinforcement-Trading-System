@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Credentials — NEVER commit
+.env
+
+# Model files (large)
+models/*.pt
+models/*.pth
+models/*.pkl
+
+# Data files (large / downloaded)
+data/*.csv
+data/*.parquet
+data/*.h5
+
+# Results (regenerate from runs)
+results/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+

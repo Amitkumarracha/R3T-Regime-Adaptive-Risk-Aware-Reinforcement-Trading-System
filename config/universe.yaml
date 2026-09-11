@@ -1,0 +1,98 @@
+stocks:
+  # Large Caps (OK)
+  - ticker: HDFCBANK
+    scrip_code: 1333
+    sector: Banking
+    index: NIFTY BANK
+    yahoo: HDFCBANK.NS
+  - ticker: ICICIBANK
+    scrip_code: 4963
+    sector: Banking
+    index: NIFTY BANK
+    yahoo: ICICIBANK.NS
+  - ticker: TCS
+    scrip_code: 11536
+    sector: IT
+    index: NIFTY IT
+    yahoo: TCS.NS
+  - ticker: INFY
+    scrip_code: 1594
+    sector: IT
+    index: NIFTY IT
+    yahoo: INFY.NS
+  - ticker: MARUTI
+    scrip_code: 10999
+    sector: Auto
+    index: NIFTY 50
+    yahoo: MARUTI.NS
+  - ticker: M&M
+    scrip_code: 2031
+    sector: Auto
+    index: NIFTY 50
+    yahoo: M&M.NS
+  - ticker: ITC
+    scrip_code: 1660
+    sector: FMCG
+    index: NIFTY 50
+    yahoo: ITC.NS
+  - ticker: SUNPHARMA
+    scrip_code: 3351
+    sector: Pharma
+    index: NIFTY 50
+    yahoo: SUNPHARMA.NS
+  - ticker: DRREDDY
+    scrip_code: 881
+    sector: Pharma
+    index: NIFTY 50
+    yahoo: DRREDDY.NS
+  - ticker: RELIANCE
+    scrip_code: 2885
+    sector: Energy
+    index: NIFTY 50
+    yahoo: RELIANCE.NS
+  - ticker: NTPC
+    scrip_code: 11630
+    sector: Energy
+    index: NIFTY 50
+    yahoo: NTPC.NS
+  - ticker: TATASTEEL
+    scrip_code: 3499
+    sector: Metals
+    index: NIFTY 50
+    yahoo: TATASTEEL.NS
+  - ticker: HINDALCO
+    scrip_code: 1363
+    sector: Metals
+    index: NIFTY 50
+    yahoo: HINDALCO.NS
+  - ticker: BEL
+    scrip_code: 383
+    sector: Defence
+    index: NIFTY 50
+    yahoo: BEL.NS
+  - ticker: YESBANK
+    scrip_code: 11915
+    sector: Banking
+    index: NIFTY BANK
+    yahoo: YESBANK.NS
+  - ticker: IDEA
+    scrip_code: 11532
+    sector: Telecom
+    index: NIFTY 50
+    yahoo: IDEA.NS
+  - ticker: SILVERBEES
+    scrip_code: 11212
+    sector: ETF
+    index: NIFTY 50
+    yahoo: SILVERBEES.NS
+
+indices:
+  - name: NIFTY 50
+    scrip_code: 999920000
+    yahoo: ^NSEI
+  - name: NIFTY BANK
+    scrip_code: 999920001
+    yahoo: ^NSEBANK
+  - name: NIFTY IT
+    scrip_code: 999920005
+    yahoo: ^CNXIT

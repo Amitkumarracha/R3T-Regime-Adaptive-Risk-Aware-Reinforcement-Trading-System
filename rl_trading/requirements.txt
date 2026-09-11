@@ -1,0 +1,15 @@
+torch --index-url https://download.pytorch.org/whl/cpu
+gymnasium
+pandas
+numpy
+scikit-learn
+matplotlib
+ta
+yfinance
+py5paisa
+flask
+flask-cors
+python-dotenv
+pyotp
+pyyaml
+schedule

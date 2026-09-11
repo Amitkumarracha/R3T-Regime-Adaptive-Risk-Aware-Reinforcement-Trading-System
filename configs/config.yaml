@@ -1,0 +1,76 @@
+# configs/config.yaml — R3T Master Configuration
+# All tunable hyperparameters live here. Never hard-code values in source files.
+
+project:
+  name: R3T
+  version: "1.0"
+  seed: 42
+
+market:
+  symbols:
+    - "TCS.NS"
+    - "INFY.NS"
+  primary_symbol: "TCS.NS"
+  interval: "1d"          # yfinance interval (1d for daily, 1h for hourly)
+  period: "5y"            # lookback period for yfinance
+
+data:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15        # the remainder
+  session_minutes: 375    # NSE: 9:15 AM – 3:30 PM
+
+regime:
+  n_regimes: 4            # 0=Sideways, 1=Bullish, 2=Bearish, 3=HighVol
+  rolling_window: 20      # candles for rolling feature computation
+  kmeans_seed: 42
+
+model:
+  hidden_dim: 128
+  gamma: 0.99
+  learning_rate: 0.001
+  batch_size: 64
+  replay_size: 50000
+  target_update_steps: 500
+  epsilon_start: 1.0
+  epsilon_min: 0.01
+  epsilon_decay: 0.995
+  max_episodes: 200       # training episodes
+  seed: 42
+
+reward:
+  lambda_cost: 0.5        # penalize transaction costs
+  lambda_drawdown: 0.8    # penalize portfolio drawdown
+  lambda_volatility: 0.2  # penalize realized volatility
+  lambda_turnover: 0.1    # penalize excessive turnover
+
+risk:
+  max_daily_loss_pct: 1.5       # % of daily start equity
+  max_drawdown_pct: 5.0         # % from peak equity
+  max_position_pct: 25.0        # max single stock allocation %
+  max_sector_exposure_pct: 50.0 # max sector exposure %
+  risk_per_trade_pct: 0.5       # % of equity risked per trade
+  atr_stop_multiplier: 3.0      # Stop = entry ± k×ATR
+  min_confidence: 0.55          # below this → HOLD
+
+execution:
+  mode: paper               # "paper" or "live" — NEVER change to live for CA-2
+  initial_capital: 100000.0 # ₹1,00,000
+  slippage_bps: 5           # basis points of slippage per trade
+  brokerage_per_leg: 20.0   # ₹20 flat (Zerodha-style)
+  brokerage_pct: 0.0003     # 0.03% (min of flat and pct is used)
+
+confidence_gate:
+  low: 0.55     # below → HOLD
+  medium: 0.65  # below → small position (25%)
+  high: 0.80    # above → normal/max position
+
+walk_forward:
+  n_windows: 3
+  train_months: 24
+  val_months: 6
+  test_months: 6
+
+broker:
+  name: fyers      # "fyers" or "yfinance" (for data)
+  # Credentials loaded from .env — never stored here

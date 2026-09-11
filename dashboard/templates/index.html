@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laplace - Personal Quant Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['DM Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        pt: {
+                            bg: '#050505',
+                            surface: '#0F0F0F',
+                            accent: '#D4AF37', // GOLD
+                            success: '#D4AF37', // Using Gold for success too
+                            danger: '#FF3131', // CRIMSON RED
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle at 45% 35%, #1A120B 0%, #050505 100%);
+            background-attachment: fixed;
+            color: #E6EDF3;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(30, 41, 59, 0.6);
+            border-color: rgba(68, 147, 248, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px -10px rgba(68, 147, 248, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+        .hidden-panel {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.98);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .show-panel {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glow-green { text-shadow: 0 0 10px rgba(63, 185, 80, 0.5); }
+        .glow-red { text-shadow: 0 0 10px rgba(248, 81, 73, 0.5); }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 border-b border-white/5 bg-pt-bg/60 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-auto sm:h-20 py-4 sm:py-0 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pt-accent to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 flex-shrink-0">
+                    <span class="text-xl font-bold font-serif text-black">L</span>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-wide text-white uppercase italic">Laplace</h1>
+                    <p class="text-[10px] text-pt-accent font-mono uppercase tracking-widest leading-none">Quant Trading Intelligence</p>
+                </div>
+                <div class="ml-auto sm:hidden">
+                    <div class="flex items-center gap-2" id="trading-status-indicator-mobile">
+                        {% if paused %}
+                        <span class="relative flex h-2 w-2">
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        {% else %}
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Global Portfolio Stats -->
+            <div class="flex items-center justify-between sm:justify-end gap-3 sm:gap-8 w-full sm:w-auto border-t border-white/5 pt-4 sm:pt-0 sm:border-0 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
+                <!-- PAUSE BUTTON -->
+                <button id="toggle-pause-btn" class="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl {{ 'bg-amber-500/10 border-amber-500/50 text-amber-500' if paused else 'bg-white/5 border-white/10 text-slate-300' }} border hover:bg-white/10 transition-colors flex-shrink-0">
+                    <span id="pause-text" class="text-[10px] sm:text-xs font-bold font-mono tracking-widest">{{ 'RESUME' if paused else 'PAUSE' }}</span>
+                </button>
+                <div class="hidden sm:block w-px h-8 bg-white/10"></div>
+                
+                <div class="flex flex-col items-end flex-shrink-0">
+                    <span class="text-[10px] text-slate-400 font-mono uppercase leading-none mb-1">Total Value</span>
+                    <span class="text-sm sm:text-xl font-bold text-white font-mono" id="agg-value">₹ 0.00</span>
+                </div>
+                <div class="w-px h-6 sm:h-8 bg-white/10"></div>
+                <div class="flex flex-col items-end flex-shrink-0">
+                    <span class="text-[10px] text-slate-400 font-mono uppercase leading-none mb-1">Portfolio Alpha</span>
+                    <span class="text-sm sm:text-xl font-bold font-mono text-slate-500" id="agg-pnl">₹ 0.00</span>
+                </div>
+                <div class="hidden sm:flex items-center gap-2" id="trading-status-indicator">
+                    <div class="w-px h-8 bg-white/10 mr-4"></div>
+                    {% if paused %}
+                    <span class="relative flex h-3 w-3">
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                    </span>
+                    <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">PAUSED</span>
+                    {% else %}
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs font-bold text-emerald-500 uppercase tracking-wider">Live Trading</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Grid -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-10">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl font-bold text-white tracking-tight">Active Execution Universe</h2>
+            <div class="text-sm font-mono text-pt-accent" id="last-update">Syncing with Exchange...</div>
+        </div>
+
+        <!-- Supervisor Widgets -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <!-- Market Health Widget -->
+            <div class="glass-panel rounded-2xl p-6 border-l-4 border-l-pt-accent">
+                <h3 class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-4">Market Health</h3>
+                <div class="space-y-4" id="market-health-vitals">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-mono text-slate-300">NIFTY 50</span>
+                        <div class="flex items-center gap-2">
+                             <span class="text-sm font-bold font-mono" id="idx-nifty-price">--</span>
+                             <span class="text-[10px] font-mono" id="idx-nifty-change">--</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-mono text-slate-300">BANK NIFTY</span>
+                        <div class="flex items-center gap-2">
+                             <span class="text-sm font-bold font-mono" id="idx-bank-price">--</span>
+                             <span class="text-[10px] font-mono" id="idx-bank-change">--</span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-white/5 flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-pt-accent uppercase">Context</span>
+                        <span class="text-[10px] font-mono text-white" id="market-expiry-tag">PENDING</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Basket Allocation Widget -->
+            <div class="glass-panel rounded-2xl p-6 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xs font-mono text-slate-400 uppercase tracking-widest">Basket Allocation (₹15,000 Portfolio)</h3>
+                    <span class="text-[10px] font-mono text-emerald-500 uppercase">Diversified Mode</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="basket-allocation-grid">
+                    <!-- ETF -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                            <span>ETF BUNDLE (30%)</span>
+                            <span id="basket-etf-val">₹0</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                            <div id="basket-etf-bar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- ALPHA -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                            <span>ALPHA MIDCAPS (50%)</span>
+                            <span id="basket-mid-val">₹0</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                            <div id="basket-mid-bar" class="bg-pt-accent h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- ANCHOR -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                            <span>HEAVY ANCHORS (20%)</span>
+                            <span id="basket-heavy-val">₹0</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                            <div id="basket-heavy-bar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% for sector, items in sectors.items() %}
+        <div class="mb-10">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-4 bg-pt-accent rounded-full"></div>
+                <h3 class="text-sm font-bold text-slate-300 font-mono uppercase tracking-widest">{{ sector }}</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="stock-grid-{{ sector }}">
+                {% for stock in items %}
+                <div class="glass-card rounded-2xl cursor-pointer fade-in relative overflow-hidden group min-h-[160px]" data-ticker="{{ stock.ticker }}" data-domain="{{ stock.domain }}" onclick="openModal('{{ stock.ticker }}', '{{ stock.sector }}')">
+                    
+                    <!-- Background Large Faded Logo -->
+                    <div class="absolute -right-4 -bottom-4 w-32 h-32 opacity-[0.05] mix-blend-luminosity group-hover:opacity-10 transition-opacity pointer-events-none" 
+                         style="background-image: url('https://www.google.com/s2/favicons?domain={{ stock.domain }}&sz=128'); background-size: contain; background-repeat: no-repeat; background-position: center;">
+                    </div>
+
+                    <div class="p-5 h-full flex flex-col justify-between relative z-10">
+                        <!-- Top section: Logo + Ticker + Action Chip -->
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center p-1 overflow-hidden shadow-inner bg-white">
+                                    <img src="https://www.google.com/s2/favicons?domain={{ stock.domain }}&sz=128" alt="{{ stock.ticker }}" class="w-full h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-slate-900 font-bold\'>{{ stock.ticker[0] }}</span>';">
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-white leading-tight">{{ stock.ticker }}</h3>
+                                    <p class="text-[10px] text-pt-accent font-mono uppercase tracking-widest">{{ stock.sector }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Middle section: Price & PNL -->
+                        <div class="mb-4">
+                            <span class="text-2xl font-bold text-white block mb-1 font-mono" id="price-{{ stock.ticker }}">₹ --</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold font-mono text-slate-500" id="pnl-{{ stock.ticker }}">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Bottom section: Tags -->
+                        <div class="flex items-center gap-2 mt-auto">
+                            <span class="px-2 py-1 rounded text-[10px] font-bold font-mono uppercase border border-slate-600 text-slate-400 bg-slate-800/50" id="action-{{ stock.ticker }}">HOLD</span>
+                            <span class="px-2 py-1 rounded text-[10px] font-bold font-mono uppercase bg-white/5 border border-white/10 text-slate-300" id="pos-{{ stock.ticker }}">QTY: 0</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </main>
+
+    <!-- Modal Overlay -->
+    <div id="stockModal" class="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6 hidden-panel bg-black/80 sm:bg-black/60 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl flex flex-col overflow-hidden relative">
+            
+            <!-- Modal Header -->
+            <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-white/5 bg-slate-800/20 flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden" id="modal-logo-container">
+                        <!-- Filled via JS -->
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span id="modal-ticker">TICKER</span>
+                        </h2>
+                        <span class="text-xs text-slate-400 font-mono tracking-widest uppercase" id="modal-sector">SECTOR</span>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="p-2 rounded-full hover:bg-white/10 text-slate-400 transition-colors bg-white/5 border border-white/10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                
+                <!-- Chart Area -->
+                <div class="w-full flex-col bg-[#0D1117]/80 border border-pt-accent/20 rounded-2xl p-4 shadow-inner">
+                    <!-- Chart Controls -->
+                    <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                        <div class="flex items-center gap-2" id="chart-type-toggles">
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-pt-accent/20 text-pt-accent border border-pt-accent/50" data-type="candle" onclick="setChartType('candle')">Candle</button>
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 transition-colors" data-type="line" onclick="setChartType('line')">Line</button>
+                        </div>
+                        <div class="flex items-center gap-2" id="chart-tf-toggles">
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-pt-accent/20 text-pt-accent border border-pt-accent/50" data-tf="5m" onclick="setTimeframe('5m')">5M</button>
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 transition-colors" data-tf="15m" onclick="setTimeframe('15m')">15M</button>
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 transition-colors" data-tf="1h" onclick="setTimeframe('1h')">1H</button>
+                            <button class="px-3 py-1 rounded-lg text-xs font-bold font-mono tracking-wide bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 transition-colors" data-tf="1d" onclick="setTimeframe('1d')">1D</button>
+                        </div>
+                    </div>
+                    <!-- Lightweight Chart Container -->
+                    <div id="tv-chart" class="w-full h-80 relative"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- EMA Logic Status -->
+                    <div class="bg-[#161B22]/80 border border-white/5 rounded-2xl p-5">
+                        <h3 class="text-xs font-mono text-pt-accent uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            EMA Chart Rules
+                        </h3>
+                        <div id="signal-reasons" class="text-slate-300 text-sm space-y-2 font-mono">
+                            Fetching analysis...
+                        </div>
+                    </div>
+
+                    <!-- Trading Logs Table -->
+                    <div class="bg-[#161B22]/80 border border-white/5 rounded-2xl p-5 overflow-hidden flex flex-col">
+                        <h3 class="text-xs font-mono text-pt-accent uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Paper Trade Logs
+                        </h3>
+                        <div class="flex-1 overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="text-xs text-slate-500 font-mono mb-2 border-b border-white/10">
+                                    <tr>
+                                        <th class="pb-2 font-normal">Entry Time</th>
+                                        <th class="pb-2 font-normal">Action</th>
+                                        <th class="pb-2 font-normal text-right">Qty</th>
+                                        <th class="pb-2 font-normal text-right">Entry ₹</th>
+                                        <th class="pb-2 font-normal text-right">Net PnL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logs-body" class="divide-y divide-white/5 font-mono text-slate-300">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
